@@ -2,7 +2,7 @@
 # =============================================================================
 # update-vai.sh - Atualizador Arch Linux (menu completo, relatório detalhado)
 # Autor: Diego Ernani (CapivaraVai)
-# Versão: 0.7.0
+# Versão: 0.7.1
 # =============================================================================
 
 set -Eeuo pipefail
@@ -10,7 +10,7 @@ set -Eeuo pipefail
 _early_error() { echo "[ERROR] $*" >&2; }
 trap 'rc=$?; _early_error "Erro inesperado (linha $LINENO): $BASH_COMMAND (exit=$rc)"; exit $rc' ERR
 
-VERSION="0.7.0"
+VERSION="0.7.1"
 AUTHOR="Diego Ernani (CapivaraVai)"
 
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/arch-update-vai/logs"
@@ -484,22 +484,22 @@ update_fwupd() {
   command -v fwupdmgr >/dev/null 2>&1 || { warn "fwupd (fwupdmgr) não está instalado."; return 0; }
   ensure_sudo || return 1
 
-  local cnt
-  cnt="$(_count_fwupd_updates)"
-  UPDATED_FWUPD="$cnt"
-
   run_step "fwupd: refresh" 15 "45m" sudo fwupdmgr refresh --force || true
 
   info "➡️  fwupd: get-updates"
   if sudo fwupdmgr get-updates >> "$LOGFILE" 2>&1; then
     success "fwupd: get-updates ok"
   else
-    warn "fwupd: get-updates retornou status não-zero (informativo, ignorado)."
+    warn "fwupd: get-updates não encontrou atualizações (isso não é erro)."
   fi
 
-  run_step "fwupd: update [itens: $cnt]" 15 "90m" sudo fwupdmgr update -y || true
-  success "fwupd finalizado."
+  if sudo fwupdmgr update -y >> "$LOGFILE" 2>&1; then
+    success "fwupd: update concluído."
+  else
+    info "fwupd: nenhum firmware novo disponível."
+  fi
 }
+
 
 verifica_update_pip() {
   local py="python"
